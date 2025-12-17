@@ -1,5 +1,5 @@
 /**
- * Offline OCR Module - Uses Tesseract.js for browser-based OCR
+ * Offline OCR Module - Enhanced Tesseract.js for maximum accuracy
  * Works completely offline after first load
  */
 const OfflineOCR = {
@@ -13,7 +13,6 @@ const OfflineOCR = {
     async init(onProgress) {
         if (this.isReady) return true;
         if (this.isLoading) {
-            // Wait for existing init to complete
             while (this.isLoading) {
                 await new Promise(r => setTimeout(r, 100));
             }
@@ -25,7 +24,6 @@ const OfflineOCR = {
         try {
             onProgress && onProgress('Loading OCR engine...');
 
-            // Create worker
             this.worker = await Tesseract.createWorker('eng', 1, {
                 logger: m => {
                     if (m.status === 'recognizing text') {
@@ -33,6 +31,11 @@ const OfflineOCR = {
                         onProgress && onProgress(`Recognizing... ${pct}%`);
                     }
                 }
+            });
+
+            // Set optimal parameters for label scanning
+            await this.worker.setParameters({
+                tessedit_pageseg_mode: '6'  // Assume uniform block of text
             });
 
             this.isReady = true;
@@ -47,19 +50,14 @@ const OfflineOCR = {
         }
     },
 
-    /**
-     * Process image with Tesseract
-     */
     async process(imageData, onProgress) {
-        // Initialize if needed
         if (!this.isReady) {
             await this.init(onProgress);
         }
 
-        onProgress && onProgress('Processing image...');
+        onProgress && onProgress('Enhancing image...');
 
         try {
-            // Preprocess image for better accuracy
             const processed = await this.preprocessImage(imageData);
 
             onProgress && onProgress('Running OCR...');
@@ -68,28 +66,27 @@ const OfflineOCR = {
 
             onProgress && onProgress('Done!');
 
-            console.log('OCR Result:', result.data.text);
+            console.log('Offline OCR Result:', result.data.text);
             return result.data.text;
         } catch (err) {
-            console.error('OCR Error:', err);
+            console.error('Offline OCR Error:', err);
             throw new Error('OCR failed: ' + err.message);
         }
     },
 
     /**
-     * Preprocess image for better OCR accuracy
+     * Enhanced preprocessing for maximum accuracy
      */
     async preprocessImage(imageData) {
         return new Promise((resolve, reject) => {
             const img = new Image();
 
             img.onload = () => {
-                // Create canvas for processing
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
 
-                // Use larger size for better accuracy
-                const maxWidth = 1400;
+                // Higher resolution
+                const maxWidth = 1600;
                 let w = img.width;
                 let h = img.height;
 
@@ -104,19 +101,10 @@ const OfflineOCR = {
                 // Draw image
                 ctx.drawImage(img, 0, 0, w, h);
 
-                // Apply contrast enhancement
-                const imageData = ctx.getImageData(0, 0, w, h);
-                const data = imageData.data;
-
-                // Increase contrast
-                const contrast = 1.3;
-                for (let i = 0; i < data.length; i += 4) {
-                    data[i] = Math.min(255, Math.max(0, ((data[i] - 128) * contrast) + 128));
-                    data[i + 1] = Math.min(255, Math.max(0, ((data[i + 1] - 128) * contrast) + 128));
-                    data[i + 2] = Math.min(255, Math.max(0, ((data[i + 2] - 128) * contrast) + 128));
-                }
-
-                ctx.putImageData(imageData, 0, 0);
+                // Apply all enhancements
+                this.applyGrayscale(ctx, w, h);
+                this.applyContrast(ctx, w, h, 1.5);
+                this.applyBinarization(ctx, w, h);
 
                 // Return as blob URL
                 canvas.toBlob(blob => {
@@ -130,7 +118,6 @@ const OfflineOCR = {
 
             img.onerror = () => reject(new Error('Failed to load image'));
 
-            // Handle different input types
             if (typeof imageData === 'string') {
                 img.src = imageData;
             } else if (imageData instanceof Blob || imageData instanceof File) {
@@ -142,8 +129,86 @@ const OfflineOCR = {
     },
 
     /**
-     * Terminate worker to free memory
+     * Convert to grayscale
      */
+    applyGrayscale(ctx, w, h) {
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            data[i] = gray;
+            data[i + 1] = gray;
+            data[i + 2] = gray;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+    },
+
+    /**
+     * Apply contrast
+     */
+    applyContrast(ctx, w, h, factor) {
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            data[i] = Math.min(255, Math.max(0, ((data[i] - 128) * factor) + 128));
+            data[i + 1] = Math.min(255, Math.max(0, ((data[i + 1] - 128) * factor) + 128));
+            data[i + 2] = Math.min(255, Math.max(0, ((data[i + 2] - 128) * factor) + 128));
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+    },
+
+    /**
+     * Apply adaptive binarization (Otsu's method) for clearer text
+     */
+    applyBinarization(ctx, w, h) {
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+
+        // Calculate histogram
+        const histogram = new Array(256).fill(0);
+        for (let i = 0; i < data.length; i += 4) {
+            histogram[data[i]]++;
+        }
+
+        // Find Otsu's threshold
+        const total = w * h;
+        let sum = 0;
+        for (let i = 0; i < 256; i++) sum += i * histogram[i];
+
+        let sumB = 0, wB = 0, wF = 0, maxVar = 0, threshold = 128;
+
+        for (let i = 0; i < 256; i++) {
+            wB += histogram[i];
+            if (wB === 0) continue;
+            wF = total - wB;
+            if (wF === 0) break;
+
+            sumB += i * histogram[i];
+            const mB = sumB / wB;
+            const mF = (sum - sumB) / wF;
+            const variance = wB * wF * (mB - mF) ** 2;
+
+            if (variance > maxVar) {
+                maxVar = variance;
+                threshold = i;
+            }
+        }
+
+        // Apply threshold
+        for (let i = 0; i < data.length; i += 4) {
+            const val = data[i] > threshold ? 255 : 0;
+            data[i] = val;
+            data[i + 1] = val;
+            data[i + 2] = val;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+    },
+
     async terminate() {
         if (this.worker) {
             await this.worker.terminate();
