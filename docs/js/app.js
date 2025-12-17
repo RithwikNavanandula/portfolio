@@ -492,8 +492,8 @@ ${entries}
         });
     },
 
-    cropAndProcess() {
-        const cropped = this.getCroppedImage();
+    async cropAndProcess() {
+        const cropped = await this.getCroppedImage();
         this.el.cropModal.classList.add('hidden');
         if (this.cropResolve) {
             this.cropResolve(cropped);
