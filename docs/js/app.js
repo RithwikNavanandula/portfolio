@@ -427,22 +427,26 @@ const App = {
      * Export data to NAV-compatible XML format
      */
     async exportToNAV() {
-        const scans = await Storage.getAll();
-        if (scans.length === 0) {
-            this.toast('No data to export');
-            return;
-        }
+        console.log('NAV Export clicked');
+        try {
+            const scans = await Storage.getAll();
+            console.log('NAV Export - scans:', scans.length);
 
-        // Convert date from DD/MM/YYYY to YYYY-MM-DD (NAV format)
-        const toNavDate = (dateStr) => {
-            if (!dateStr) return '';
-            const parts = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-            if (!parts) return dateStr;
-            return `${parts[3]}-${parts[2]}-${parts[1]}`;
-        };
+            if (scans.length === 0) {
+                this.toast('No data to export');
+                return;
+            }
 
-        // Generate XML
-        const entries = scans.map(s => `
+            // Convert date from DD/MM/YYYY to YYYY-MM-DD (NAV format)
+            const toNavDate = (dateStr) => {
+                if (!dateStr) return '';
+                const parts = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                if (!parts) return dateStr;
+                return `${parts[3]}-${parts[2]}-${parts[1]}`;
+            };
+
+            // Generate XML
+            const entries = scans.map(s => `
     <Entry>
         <LotNo>${this.escapeXml(s.batchNo || '')}</LotNo>
         <ExpirationDate>${toNavDate(s.expiryDate)}</ExpirationDate>
@@ -452,7 +456,7 @@ const App = {
         <EntryDate>${new Date(s.timestamp).toISOString().split('T')[0]}</EntryDate>
     </Entry>`).join('');
 
-        const xml = `<?xml version="1.0" encoding="UTF-8"?>
+            const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <ItemTrackingEntries>
     <GeneratedBy>Label Scanner App</GeneratedBy>
     <GeneratedAt>${new Date().toISOString()}</GeneratedAt>
@@ -460,15 +464,19 @@ const App = {
 ${entries}
 </ItemTrackingEntries>`;
 
-        // Download file
-        const blob = new Blob([xml], { type: 'application/xml' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `nav_import_${new Date().toISOString().split('T')[0]}.xml`;
-        a.click();
-        URL.revokeObjectURL(url);
-        this.toast(`📤 NAV export ready (${scans.length} entries)`);
+            // Download file
+            const blob = new Blob([xml], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nav_import_${new Date().toISOString().split('T')[0]}.xml`;
+            a.click();
+            URL.revokeObjectURL(url);
+            this.toast(`📤 NAV export ready (${scans.length} entries)`);
+        } catch (err) {
+            console.error('NAV Export error:', err);
+            this.toast('❌ NAV export failed');
+        }
     },
 
     escapeXml(str) {
