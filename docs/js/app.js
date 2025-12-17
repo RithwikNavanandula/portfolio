@@ -20,7 +20,8 @@ const App = {
             modeStatus: document.getElementById('mode-status'),
 
             quickMode: document.getElementById('quick-mode'),
-            fileInput: document.getElementById('file-input'),
+            cameraInput: document.getElementById('camera-input'),
+            galleryInput: document.getElementById('gallery-input'),
             loading: document.getElementById('loading'),
             loadingText: document.getElementById('loading-text'),
             results: document.getElementById('results'),
@@ -72,8 +73,9 @@ const App = {
     },
 
     bindEvents() {
-        // File upload
-        this.el.fileInput.addEventListener('change', e => this.handleFile(e));
+        // File upload (camera and gallery)
+        this.el.cameraInput.addEventListener('change', e => this.handleFile(e));
+        this.el.galleryInput.addEventListener('change', e => this.handleFile(e));
 
         // Mode toggle
         this.el.modeOnline.addEventListener('click', () => this.setMode('online'));

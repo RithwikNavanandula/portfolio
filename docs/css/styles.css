@@ -188,25 +188,39 @@ body {
     margin-bottom: 16px;
 }
 
+.upload-buttons {
+    display: flex;
+    gap: 10px;
+}
+
 .upload-btn {
+    flex: 1;
     display: block;
-    width: 100%;
     padding: 16px;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     border-radius: var(--radius);
     color: white;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     text-align: center;
     cursor: pointer;
     transition: transform 0.2s;
 }
 
+.upload-btn.camera {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+}
+
+.upload-btn.gallery {
+    background: linear-gradient(135deg, #2196F3, #1565C0);
+}
+
 .upload-btn:active {
     transform: scale(0.98);
 }
 
-#file-input {
+#camera-input,
+#gallery-input {
     display: none;
 }
 

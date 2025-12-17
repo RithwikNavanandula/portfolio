@@ -35,10 +35,15 @@
             </label>
         </div>
 
-        <!-- Upload Button -->
+        <!-- Upload Buttons -->
         <div class="upload-section">
-            <label for="file-input" class="upload-btn">📁 Choose Image</label>
-            <input type="file" id="file-input" accept="image/*" capture="environment">
+            <div class="upload-buttons">
+                <label for="camera-input" class="upload-btn camera">📷 Camera</label>
+                <input type="file" id="camera-input" accept="image/*" capture="environment">
+
+                <label for="gallery-input" class="upload-btn gallery">🖼️ Gallery</label>
+                <input type="file" id="gallery-input" accept="image/*">
+            </div>
         </div>
 
         <!-- Loading -->
