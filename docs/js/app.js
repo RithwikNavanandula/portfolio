@@ -536,35 +536,89 @@ ${entries}
 
     initCropDrag() {
         const box = this.el.cropBox;
-        let dragging = false;
-        let startX, startY, startL, startT;
+        const cont = document.getElementById('crop-container');
+        let mode = null; // 'move' or resize direction
+        let startX, startY, startL, startT, startW, startH;
 
-        const start = e => {
-            dragging = true;
+        const getEventPos = e => {
             const t = e.touches ? e.touches[0] : e;
-            startX = t.clientX;
-            startY = t.clientY;
+            return { x: t.clientX, y: t.clientY };
+        };
+
+        const start = (e, resizeDir) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const pos = getEventPos(e);
+            startX = pos.x;
+            startY = pos.y;
             startL = box.offsetLeft;
             startT = box.offsetTop;
-            e.preventDefault();
+            startW = box.offsetWidth;
+            startH = box.offsetHeight;
+            mode = resizeDir || 'move';
         };
 
         const move = e => {
-            if (!dragging) return;
-            const t = e.touches ? e.touches[0] : e;
-            const dx = t.clientX - startX;
-            const dy = t.clientY - startY;
-            const cont = document.getElementById('crop-container');
-            const maxX = cont.clientWidth - box.clientWidth;
-            const maxY = cont.clientHeight - box.clientHeight;
-            box.style.left = Math.max(0, Math.min(maxX, startL + dx)) + 'px';
-            box.style.top = Math.max(0, Math.min(maxY, startT + dy)) + 'px';
+            if (!mode) return;
+
+            const pos = getEventPos(e);
+            const dx = pos.x - startX;
+            const dy = pos.y - startY;
+            const contW = cont.clientWidth;
+            const contH = cont.clientHeight;
+            const minSize = 50;
+
+            if (mode === 'move') {
+                const maxX = contW - box.offsetWidth;
+                const maxY = contH - box.offsetHeight;
+                box.style.left = Math.max(0, Math.min(maxX, startL + dx)) + 'px';
+                box.style.top = Math.max(0, Math.min(maxY, startT + dy)) + 'px';
+            } else {
+                let newL = startL, newT = startT, newW = startW, newH = startH;
+
+                // Handle resize based on direction
+                if (mode.includes('e')) {
+                    newW = Math.max(minSize, Math.min(contW - startL, startW + dx));
+                }
+                if (mode.includes('w')) {
+                    const delta = Math.min(dx, startW - minSize);
+                    newL = Math.max(0, startL + delta);
+                    newW = startW - (newL - startL);
+                }
+                if (mode.includes('s')) {
+                    newH = Math.max(minSize, Math.min(contH - startT, startH + dy));
+                }
+                if (mode.includes('n')) {
+                    const delta = Math.min(dy, startH - minSize);
+                    newT = Math.max(0, startT + delta);
+                    newH = startH - (newT - startT);
+                }
+
+                box.style.left = newL + 'px';
+                box.style.top = newT + 'px';
+                box.style.width = newW + 'px';
+                box.style.height = newH + 'px';
+            }
         };
 
-        const end = () => { dragging = false; };
+        const end = () => { mode = null; };
 
-        box.addEventListener('mousedown', start);
-        box.addEventListener('touchstart', start, { passive: false });
+        // Box move (center area)
+        box.addEventListener('mousedown', e => {
+            if (e.target === box) start(e, 'move');
+        });
+        box.addEventListener('touchstart', e => {
+            if (e.target === box) start(e, 'move');
+        }, { passive: false });
+
+        // Resize handles
+        box.querySelectorAll('.resize-handle').forEach(handle => {
+            const dir = handle.dataset.dir;
+            handle.addEventListener('mousedown', e => start(e, dir));
+            handle.addEventListener('touchstart', e => start(e, dir), { passive: false });
+        });
+
         document.addEventListener('mousemove', move);
         document.addEventListener('touchmove', move, { passive: false });
         document.addEventListener('mouseup', end);
