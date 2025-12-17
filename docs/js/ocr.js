@@ -1,29 +1,29 @@
 /**
  * OCR Module - Maximum Accuracy Version
- * Features: Dual engine comparison, strong preprocessing, grayscale, sharpening
+ * Features: Dual engine, advanced preprocessing, noise reduction, adaptive contrast
  */
 const OCR = {
     API_KEY: 'K85403682988957',
     API_URL: 'https://api.ocr.space/parse/image',
 
     async process(file, onProgress) {
-        onProgress && onProgress('Preprocessing image...');
+        onProgress && onProgress('Enhancing image...');
 
-        // Strong image preprocessing
+        // Advanced image preprocessing
         const enhanced = await this.enhanceImage(file);
 
-        onProgress && onProgress('Running OCR (Engine 1)...');
+        onProgress && onProgress('Running dual-engine OCR...');
 
         // Try both engines and pick best result
         const [result1, result2] = await Promise.all([
-            this.callOCR(enhanced, 1, onProgress),
-            this.callOCR(enhanced, 2, onProgress)
+            this.callOCR(enhanced, 1),
+            this.callOCR(enhanced, 2)
         ]);
 
         console.log('Engine 1 result:', result1?.length || 0, 'chars');
         console.log('Engine 2 result:', result2?.length || 0, 'chars');
 
-        // Pick the result with more detected dates/batches (better for labels)
+        // Pick the result with more useful content
         const score1 = this.scoreResult(result1);
         const score2 = this.scoreResult(result2);
 
@@ -33,7 +33,7 @@ const OCR = {
         const bestResult = score1 >= score2 ? result1 : result2;
         const engine = score1 >= score2 ? 1 : 2;
 
-        onProgress && onProgress(`Done! (Engine ${engine} was better)`);
+        onProgress && onProgress(`Done! (Engine ${engine} selected)`);
 
         return bestResult || '';
     },
@@ -45,33 +45,34 @@ const OCR = {
         if (!text) return 0;
         let score = 0;
 
-        // Count dates found
+        // Count dates found (most important)
         const dates = (text.match(/\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}/g) || []).length;
-        score += dates * 10;
+        score += dates * 15;
 
         // Count batch-like patterns
         const batches = (text.match(/\d{2}-\d{4}-\d{4}/g) || []).length;
-        score += batches * 15;
+        score += batches * 20;
 
         // Count keywords
-        const keywords = ['BATCH', 'MFG', 'EXP', 'DATE', 'MANUFACTURE', 'EXPIRY'];
+        const keywords = ['BATCH', 'MFG', 'EXP', 'DATE', 'MANUFACTURE', 'EXPIRY', 'BEST BEFORE', 'USE BY'];
         keywords.forEach(kw => {
             if (text.toUpperCase().includes(kw)) score += 5;
         });
 
         // Penalize very short results
-        if (text.length < 50) score -= 20;
+        if (text.length < 30) score -= 30;
+        if (text.length < 50) score -= 10;
 
-        // Bonus for longer, readable text
-        score += Math.min(text.length / 10, 20);
+        // Bonus for reasonable length
+        score += Math.min(text.length / 8, 25);
 
         return score;
     },
 
-    async callOCR(imageBlob, engine, onProgress) {
+    async callOCR(imageBlob, engine) {
         const formData = new FormData();
         formData.append('apikey', this.API_KEY);
-        formData.append('file', imageBlob, 'image.jpg');
+        formData.append('file', imageBlob, 'image.png');
         formData.append('language', 'eng');
         formData.append('OCREngine', engine.toString());
         formData.append('scale', 'true');
@@ -79,7 +80,7 @@ const OCR = {
         formData.append('detectOrientation', 'true');
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
+        const timeout = setTimeout(() => controller.abort(), 35000);
 
         try {
             const response = await fetch(this.API_URL, {
@@ -108,7 +109,7 @@ const OCR = {
     },
 
     /**
-     * Enhanced image preprocessing for maximum accuracy
+     * Advanced image preprocessing for maximum accuracy
      */
     async enhanceImage(file) {
         return new Promise((resolve, reject) => {
@@ -118,8 +119,8 @@ const OCR = {
             img.onload = () => {
                 URL.revokeObjectURL(url);
 
-                // Higher resolution for better accuracy
-                const maxWidth = 1600;
+                // Higher resolution for better accuracy (1800px)
+                const maxWidth = 1800;
                 let w = img.width;
                 let h = img.height;
 
@@ -136,15 +137,16 @@ const OCR = {
                 // Draw original
                 ctx.drawImage(img, 0, 0, w, h);
 
-                // Apply all enhancements
+                // Apply preprocessing pipeline
                 this.applyGrayscale(ctx, w, h);
-                this.applyContrast(ctx, w, h, 1.5);
-                this.applySharpening(ctx, w, h);
+                this.applyNoiseReduction(ctx, w, h);
+                this.applyAdaptiveContrast(ctx, w, h);
+                this.applySharpen(ctx, w, h);
 
-                // Higher quality output
+                // Output as PNG for lossless quality
                 canvas.toBlob(
                     blob => blob ? resolve(blob) : reject(new Error('Processing failed')),
-                    'image/png',  // PNG for lossless
+                    'image/png',
                     1.0
                 );
             };
@@ -166,40 +168,102 @@ const OCR = {
         const data = imageData.data;
 
         for (let i = 0; i < data.length; i += 4) {
+            // Use luminosity method for better contrast
             const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
             data[i] = gray;
             data[i + 1] = gray;
             data[i + 2] = gray;
         }
 
-        ctx.putImageData(imageData, 0, h);
         ctx.putImageData(imageData, 0, 0);
     },
 
     /**
-     * Apply contrast enhancement
+     * Noise reduction using median-like filter
      */
-    applyContrast(ctx, w, h, factor) {
+    applyNoiseReduction(ctx, w, h) {
         const imageData = ctx.getImageData(0, 0, w, h);
         const data = imageData.data;
+        const copy = new Uint8ClampedArray(data);
 
-        for (let i = 0; i < data.length; i += 4) {
-            data[i] = Math.min(255, Math.max(0, ((data[i] - 128) * factor) + 128));
-            data[i + 1] = Math.min(255, Math.max(0, ((data[i + 1] - 128) * factor) + 128));
-            data[i + 2] = Math.min(255, Math.max(0, ((data[i + 2] - 128) * factor) + 128));
+        // Simple box blur for noise reduction (3x3)
+        for (let y = 1; y < h - 1; y++) {
+            for (let x = 1; x < w - 1; x++) {
+                for (let c = 0; c < 3; c++) {
+                    let sum = 0;
+                    for (let ky = -1; ky <= 1; ky++) {
+                        for (let kx = -1; kx <= 1; kx++) {
+                            const idx = ((y + ky) * w + (x + kx)) * 4 + c;
+                            sum += copy[idx];
+                        }
+                    }
+                    const idx = (y * w + x) * 4 + c;
+                    data[idx] = sum / 9;
+                }
+            }
         }
 
         ctx.putImageData(imageData, 0, 0);
     },
 
     /**
-     * Apply sharpening using unsharp mask technique
+     * Apply adaptive contrast enhancement (CLAHE-like)
      */
-    applySharpening(ctx, w, h) {
+    applyAdaptiveContrast(ctx, w, h) {
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+
+        // Calculate histogram
+        const histogram = new Array(256).fill(0);
+        for (let i = 0; i < data.length; i += 4) {
+            histogram[data[i]]++;
+        }
+
+        // Find min/max values (ignore outliers)
+        let min = 0, max = 255;
+        const pixelCount = w * h;
+        let count = 0;
+
+        for (let i = 0; i < 256; i++) {
+            count += histogram[i];
+            if (count >= pixelCount * 0.01) {
+                min = i;
+                break;
+            }
+        }
+
+        count = 0;
+        for (let i = 255; i >= 0; i--) {
+            count += histogram[i];
+            if (count >= pixelCount * 0.01) {
+                max = i;
+                break;
+            }
+        }
+
+        // Apply contrast stretching
+        const range = max - min || 1;
+        const factor = 255 / range;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const val = Math.min(255, Math.max(0, (data[i] - min) * factor));
+            data[i] = val;
+            data[i + 1] = val;
+            data[i + 2] = val;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+    },
+
+    /**
+     * Apply sharpening filter
+     */
+    applySharpen(ctx, w, h) {
         const imageData = ctx.getImageData(0, 0, w, h);
         const data = imageData.data;
         const copy = new Uint8ClampedArray(data);
 
+        // Unsharp mask kernel
         const kernel = [
             0, -1, 0,
             -1, 5, -1,
