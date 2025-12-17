@@ -4,8 +4,8 @@
  * Free tier: 1000 images/month
  */
 const GoogleVision = {
-    // User needs to set their API key
-    API_KEY: localStorage.getItem('google_vision_key') || '',
+    // User's API key
+    API_KEY: localStorage.getItem('google_vision_key') || 'AIzaSyAltiZ-UrloZH7Mv4jeX3RVfaENRjNa9co',
     API_URL: 'https://vision.googleapis.com/v1/images:annotate',
 
     isConfigured() {
