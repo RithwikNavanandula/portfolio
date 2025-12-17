@@ -1,10 +1,10 @@
 /**
  * Label Scanner App - Main Controller
- * With Online and Offline OCR support
+ * With Online, Offline, and Google Vision OCR support
  */
 const App = {
     currentScan: null,
-    ocrMode: 'online', // 'online' or 'offline'
+    ocrMode: 'online', // 'online', 'offline', or 'google'
 
     // UI Elements
     el: {},
@@ -16,8 +16,12 @@ const App = {
         this.el = {
             // Mode toggle
             modeOnline: document.getElementById('mode-online'),
+            modeGoogle: document.getElementById('mode-google'),
             modeOffline: document.getElementById('mode-offline'),
             modeStatus: document.getElementById('mode-status'),
+            googleKeySection: document.getElementById('google-key-section'),
+            googleApiKey: document.getElementById('google-api-key'),
+            saveGoogleKey: document.getElementById('save-google-key'),
 
             quickMode: document.getElementById('quick-mode'),
             fileInput: document.getElementById('file-input'),
@@ -77,7 +81,9 @@ const App = {
 
         // Mode toggle
         this.el.modeOnline.addEventListener('click', () => this.setMode('online'));
+        this.el.modeGoogle.addEventListener('click', () => this.setMode('google'));
         this.el.modeOffline.addEventListener('click', () => this.setMode('offline'));
+        this.el.saveGoogleKey.addEventListener('click', () => this.saveGoogleApiKey());
 
         // Actions
         this.el.saveBtn.addEventListener('click', () => this.save());
@@ -95,26 +101,53 @@ const App = {
         this.initCropDrag();
     },
 
+    saveGoogleApiKey() {
+        const key = this.el.googleApiKey.value.trim();
+        if (key) {
+            GoogleVision.setApiKey(key);
+            this.toast('✅ Google API key saved!');
+            this.el.googleKeySection.classList.add('hidden');
+            this.el.modeStatus.textContent = '🔥 Google Vision AI ready!';
+            this.el.modeStatus.className = 'mode-status ready';
+        } else {
+            this.toast('❌ Please enter a valid API key');
+        }
+    },
+
     setMode(mode) {
         this.ocrMode = mode;
 
         // Update buttons
         this.el.modeOnline.classList.toggle('active', mode === 'online');
+        this.el.modeGoogle.classList.toggle('active', mode === 'google');
         this.el.modeOffline.classList.toggle('active', mode === 'offline');
 
-        // Update status
-        if (mode === 'online') {
-            this.el.modeStatus.textContent = '⚡ Using fast online OCR';
-            this.el.modeStatus.className = 'mode-status';
+        // Show/hide Google key section
+        if (mode === 'google') {
+            if (!GoogleVision.isConfigured()) {
+                this.el.googleKeySection.classList.remove('hidden');
+                this.el.modeStatus.textContent = '⚠️ Enter Google Vision API key';
+                this.el.modeStatus.className = 'mode-status loading';
+            } else {
+                this.el.googleKeySection.classList.add('hidden');
+                this.el.modeStatus.textContent = '🔥 Google Vision AI ready!';
+                this.el.modeStatus.className = 'mode-status ready';
+            }
         } else {
-            this.el.modeStatus.textContent = '📴 Using offline OCR (works without internet)';
-            this.el.modeStatus.className = 'mode-status ready';
+            this.el.googleKeySection.classList.add('hidden');
+        }
 
-            // Pre-load Tesseract worker
+        // Update status for other modes
+        if (mode === 'online') {
+            this.el.modeStatus.textContent = '⚡ Dual-engine OCR (high accuracy)';
+            this.el.modeStatus.className = 'mode-status';
+        } else if (mode === 'offline') {
+            this.el.modeStatus.textContent = '📴 Offline OCR';
+            this.el.modeStatus.className = 'mode-status ready';
             this.preloadOfflineOCR();
         }
 
-        this.toast(mode === 'online' ? '⚡ Online mode' : '📴 Offline mode');
+        this.toast(mode === 'google' ? '🔥 Google AI mode' : mode === 'online' ? '⚡ Fast mode' : '📴 Offline mode');
     },
 
     async preloadOfflineOCR() {
@@ -166,13 +199,18 @@ const App = {
 
             // Process OCR based on mode
             let text;
-            if (this.ocrMode === 'offline') {
+            if (this.ocrMode === 'google' && GoogleVision.isConfigured()) {
+                // Use Google Cloud Vision API (highest accuracy)
+                text = await GoogleVision.process(imageToProcess, status => {
+                    this.el.loadingText.textContent = status;
+                });
+            } else if (this.ocrMode === 'offline') {
                 // Use offline Tesseract.js
                 text = await OfflineOCR.process(imageToProcess, status => {
                     this.el.loadingText.textContent = status;
                 });
             } else {
-                // Use online OCR.space API
+                // Use online OCR.space API with dual engine
                 text = await OCR.process(imageToProcess, status => {
                     this.el.loadingText.textContent = status;
                 });
