@@ -48,7 +48,15 @@ const App = {
             cropImage: document.getElementById('crop-image'),
             cropBox: document.getElementById('crop-box'),
             cropSkip: document.getElementById('crop-skip'),
-            cropConfirm: document.getElementById('crop-confirm')
+            cropConfirm: document.getElementById('crop-confirm'),
+            // Barcode scanner
+            barcodeBtn: document.getElementById('barcode-btn'),
+            barcodeModal: document.getElementById('barcode-modal'),
+            barcodeScanner: document.getElementById('barcode-scanner'),
+            barcodeResult: document.getElementById('barcode-result'),
+            barcodeValue: document.getElementById('barcode-value'),
+            barcodeClose: document.getElementById('barcode-close'),
+            barcodeUse: document.getElementById('barcode-use')
         };
 
         // Init storage
@@ -92,6 +100,11 @@ const App = {
         // Crop modal
         this.el.cropSkip.addEventListener('click', () => this.cropResolve(null));
         this.el.cropConfirm.addEventListener('click', () => this.cropAndProcess());
+
+        // Barcode scanner
+        this.el.barcodeBtn.addEventListener('click', () => this.openBarcodeScanner());
+        this.el.barcodeClose.addEventListener('click', () => this.closeBarcodeScanner());
+        this.el.barcodeUse.addEventListener('click', () => this.useBarcodeResult());
 
         // Make crop box draggable
         this.initCropDrag();
@@ -472,8 +485,12 @@ ${entries}
             const a = document.createElement('a');
             a.href = url;
             a.download = `nav_import_${new Date().toISOString().split('T')[0]}.xml`;
+            a.style.display = 'none';
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            console.log('NAV Export - download triggered');
             this.toast(`📤 NAV export ready (${scans.length} entries)`);
         } catch (err) {
             console.error('NAV Export error:', err);
@@ -488,6 +505,101 @@ ${entries}
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&apos;');
+    },
+
+    // ===== Barcode Scanner =====
+
+    detectedBarcode: null,
+
+    openBarcodeScanner() {
+        this.el.barcodeModal.classList.remove('hidden');
+        this.el.barcodeResult.classList.add('hidden');
+        this.el.barcodeUse.classList.add('hidden');
+        this.detectedBarcode = null;
+
+        // Initialize Quagga
+        if (typeof Quagga === 'undefined') {
+            this.toast('❌ Barcode scanner not loaded');
+            return;
+        }
+
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: this.el.barcodeScanner,
+                constraints: {
+                    facingMode: "environment",
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            },
+            decoder: {
+                readers: [
+                    "ean_reader",
+                    "ean_8_reader",
+                    "code_128_reader",
+                    "code_39_reader",
+                    "upc_reader",
+                    "upc_e_reader"
+                ]
+            },
+            locate: true
+        }, err => {
+            if (err) {
+                console.error('Quagga init error:', err);
+                this.toast('❌ Cannot access camera');
+                this.closeBarcodeScanner();
+                return;
+            }
+            Quagga.start();
+        });
+
+        Quagga.onDetected(result => {
+            if (result && result.codeResult) {
+                const code = result.codeResult.code;
+                console.log('Barcode detected:', code);
+
+                this.detectedBarcode = code;
+                this.el.barcodeValue.textContent = code;
+                this.el.barcodeResult.classList.remove('hidden');
+                this.el.barcodeUse.classList.remove('hidden');
+
+                // Vibrate on detection
+                if (navigator.vibrate) navigator.vibrate(100);
+
+                this.toast('✅ Barcode detected!');
+            }
+        });
+    },
+
+    closeBarcodeScanner() {
+        if (typeof Quagga !== 'undefined') {
+            Quagga.stop();
+            Quagga.offDetected();
+        }
+        this.el.barcodeScanner.innerHTML = '';
+        this.el.barcodeModal.classList.add('hidden');
+    },
+
+    useBarcodeResult() {
+        if (this.detectedBarcode) {
+            // Put barcode in batch field
+            this.el.batch.value = this.detectedBarcode;
+            this.el.results.classList.remove('hidden');
+
+            // Update current scan
+            if (!this.currentScan) {
+                this.currentScan = {
+                    timestamp: new Date().toLocaleString('en-IN'),
+                    rawText: 'Barcode: ' + this.detectedBarcode
+                };
+            }
+            this.currentScan.batchNo = this.detectedBarcode;
+
+            this.toast('📊 Barcode added as batch number');
+        }
+        this.closeBarcodeScanner();
     },
 
     // ===== Crop Functions =====
@@ -649,7 +761,8 @@ document.addEventListener('DOMContentLoaded', () => App.init());
 // Register service worker for offline support
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        // Use relative path for GitHub Pages compatibility
+        navigator.serviceWorker.register('./sw.js')
             .then(reg => console.log('Service Worker registered'))
             .catch(err => console.log('SW registration failed:', err));
     });

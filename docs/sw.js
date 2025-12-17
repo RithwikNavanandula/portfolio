@@ -3,16 +3,16 @@
  * Caches app assets for offline use
  */
 
-const CACHE_NAME = 'label-scanner-v1';
+const CACHE_NAME = 'label-scanner-v2';
 const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/css/styles.css',
-    '/js/storage.js',
-    '/js/parser.js',
-    '/js/ocr.js',
-    '/js/offline-ocr.js',
-    '/js/app.js'
+    './',
+    './index.html',
+    './css/styles.css',
+    './js/storage.js',
+    './js/parser.js',
+    './js/ocr.js',
+    './js/offline-ocr.js',
+    './js/app.js'
 ];
 
 // External resources to cache

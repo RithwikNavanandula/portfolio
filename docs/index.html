@@ -44,6 +44,9 @@
                 <label for="gallery-input" class="upload-btn gallery">🖼️ Gallery</label>
                 <input type="file" id="gallery-input" accept="image/*">
             </div>
+            <div class="upload-buttons" style="margin-top: 10px;">
+                <button id="barcode-btn" class="upload-btn barcode">📊 Scan Barcode</button>
+            </div>
         </div>
 
         <!-- Loading -->
@@ -157,9 +160,27 @@
             </div>
         </div>
     </div>
+    <!-- Barcode Scanner Modal -->
+    <div id="barcode-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>📊 Scan Barcode</h3>
+            <p>Point camera at barcode</p>
+            <div id="barcode-scanner" class="barcode-scanner"></div>
+            <div id="barcode-result" class="barcode-result hidden">
+                <strong>Detected:</strong> <span id="barcode-value"></span>
+            </div>
+            <div class="modal-actions">
+                <button id="barcode-close" class="btn">❌ Close</button>
+                <button id="barcode-use" class="btn save hidden">✅ Use Code</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Tesseract.js for offline OCR -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <!-- QuaggaJS for barcode scanning -->
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 
     <!-- Scripts -->
     <script src="js/storage.js"></script>
