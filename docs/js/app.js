@@ -39,6 +39,7 @@ const App = {
             clearBtn: document.getElementById('clear-btn'),
             continuous: document.getElementById('continuous'),
             exportBtn: document.getElementById('export-btn'),
+            exportNavBtn: document.getElementById('export-nav-btn'),
             search: document.getElementById('search'),
             historyList: document.getElementById('history-list'),
             toast: document.getElementById('toast'),
@@ -83,6 +84,7 @@ const App = {
         this.el.sheetsBtn.addEventListener('click', () => this.sendToSheets());
         this.el.clearBtn.addEventListener('click', () => this.clear());
         this.el.exportBtn.addEventListener('click', () => this.export());
+        this.el.exportNavBtn.addEventListener('click', () => this.exportToNAV());
         this.el.search.addEventListener('input', e => this.search(e.target.value));
 
         // Crop modal
@@ -421,6 +423,63 @@ const App = {
         a.click();
         URL.revokeObjectURL(url);
         this.toast(`📥 Exported ${scans.length} scans`);
+    },
+
+    /**
+     * Export data to NAV-compatible XML format
+     */
+    async exportToNAV() {
+        const scans = await Storage.getAll();
+        if (scans.length === 0) {
+            this.toast('No data to export');
+            return;
+        }
+
+        // Convert date from DD/MM/YYYY to YYYY-MM-DD (NAV format)
+        const toNavDate = (dateStr) => {
+            if (!dateStr) return '';
+            const parts = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+            if (!parts) return dateStr;
+            return `${parts[3]}-${parts[2]}-${parts[1]}`;
+        };
+
+        // Generate XML
+        const entries = scans.map(s => `
+    <Entry>
+        <LotNo>${this.escapeXml(s.batchNo || '')}</LotNo>
+        <ExpirationDate>${toNavDate(s.expiryDate)}</ExpirationDate>
+        <ManufacturingDate>${toNavDate(s.mfgDate)}</ManufacturingDate>
+        <Description>${this.escapeXml(s.flavour || '')}</Description>
+        <LocationCode>${this.escapeXml(s.godown || '')}</LocationCode>
+        <EntryDate>${new Date(s.timestamp).toISOString().split('T')[0]}</EntryDate>
+    </Entry>`).join('');
+
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<ItemTrackingEntries>
+    <GeneratedBy>Label Scanner App</GeneratedBy>
+    <GeneratedAt>${new Date().toISOString()}</GeneratedAt>
+    <TotalEntries>${scans.length}</TotalEntries>
+${entries}
+</ItemTrackingEntries>`;
+
+        // Download file
+        const blob = new Blob([xml], { type: 'application/xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nav_import_${new Date().toISOString().split('T')[0]}.xml`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.toast(`📤 NAV export ready (${scans.length} entries)`);
+    },
+
+    escapeXml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
     },
 
     // ===== Crop Functions =====
