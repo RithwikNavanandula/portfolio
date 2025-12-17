@@ -53,6 +53,55 @@ body {
     font-size: 0.9rem;
 }
 
+/* ===== Mode Toggle ===== */
+.mode-section {
+    margin-bottom: 12px;
+}
+
+.mode-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--text2);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mode-btn.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    border-color: transparent;
+}
+
+.mode-btn:not(.active):hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mode-status {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text2);
+    padding: 4px 0;
+}
+
+.mode-status.loading {
+    color: var(--warning);
+}
+
+.mode-status.ready {
+    color: var(--success);
+}
+
 /* ===== Controls ===== */
 .controls {
     margin-bottom: 16px;

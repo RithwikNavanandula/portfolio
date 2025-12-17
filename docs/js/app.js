@@ -1,9 +1,10 @@
 /**
  * Label Scanner App - Main Controller
- * Clean, simple implementation
+ * With Online and Offline OCR support
  */
 const App = {
     currentScan: null,
+    ocrMode: 'online', // 'online' or 'offline'
 
     // UI Elements
     el: {},
@@ -13,6 +14,11 @@ const App = {
 
         // Cache elements
         this.el = {
+            // Mode toggle
+            modeOnline: document.getElementById('mode-online'),
+            modeOffline: document.getElementById('mode-offline'),
+            modeStatus: document.getElementById('mode-status'),
+
             quickMode: document.getElementById('quick-mode'),
             fileInput: document.getElementById('file-input'),
             loading: document.getElementById('loading'),
@@ -56,12 +62,21 @@ const App = {
         // Load saved godown locations
         this.loadGodownOptions();
 
+        // Check online status
+        this.updateOnlineStatus();
+        window.addEventListener('online', () => this.updateOnlineStatus());
+        window.addEventListener('offline', () => this.updateOnlineStatus());
+
         console.log('App ready!');
     },
 
     bindEvents() {
         // File upload
         this.el.fileInput.addEventListener('change', e => this.handleFile(e));
+
+        // Mode toggle
+        this.el.modeOnline.addEventListener('click', () => this.setMode('online'));
+        this.el.modeOffline.addEventListener('click', () => this.setMode('offline'));
 
         // Actions
         this.el.saveBtn.addEventListener('click', () => this.save());
@@ -76,6 +91,53 @@ const App = {
 
         // Make crop box draggable
         this.initCropDrag();
+    },
+
+    setMode(mode) {
+        this.ocrMode = mode;
+
+        // Update buttons
+        this.el.modeOnline.classList.toggle('active', mode === 'online');
+        this.el.modeOffline.classList.toggle('active', mode === 'offline');
+
+        // Update status
+        if (mode === 'online') {
+            this.el.modeStatus.textContent = '⚡ Using fast online OCR';
+            this.el.modeStatus.className = 'mode-status';
+        } else {
+            this.el.modeStatus.textContent = '📴 Using offline OCR (works without internet)';
+            this.el.modeStatus.className = 'mode-status ready';
+
+            // Pre-load Tesseract worker
+            this.preloadOfflineOCR();
+        }
+
+        this.toast(mode === 'online' ? '⚡ Online mode' : '📴 Offline mode');
+    },
+
+    async preloadOfflineOCR() {
+        if (typeof OfflineOCR !== 'undefined' && !OfflineOCR.isReady) {
+            this.el.modeStatus.textContent = '⏳ Loading OCR engine...';
+            this.el.modeStatus.className = 'mode-status loading';
+            try {
+                await OfflineOCR.init(status => {
+                    this.el.modeStatus.textContent = status;
+                });
+                this.el.modeStatus.textContent = '✅ Offline OCR ready!';
+                this.el.modeStatus.className = 'mode-status ready';
+            } catch (err) {
+                this.el.modeStatus.textContent = '❌ Failed to load offline OCR';
+                this.toast('❌ Offline OCR failed to load');
+            }
+        }
+    },
+
+    updateOnlineStatus() {
+        const online = navigator.onLine;
+        if (!online && this.ocrMode === 'online') {
+            this.toast('📴 You are offline, switching to offline OCR');
+            this.setMode('offline');
+        }
     },
 
     async handleFile(e) {
@@ -100,10 +162,19 @@ const App = {
             this.el.loading.classList.remove('hidden');
             this.el.results.classList.add('hidden');
 
-            // Process OCR
-            const text = await OCR.process(imageToProcess, status => {
-                this.el.loadingText.textContent = status;
-            });
+            // Process OCR based on mode
+            let text;
+            if (this.ocrMode === 'offline') {
+                // Use offline Tesseract.js
+                text = await OfflineOCR.process(imageToProcess, status => {
+                    this.el.loadingText.textContent = status;
+                });
+            } else {
+                // Use online OCR.space API
+                text = await OCR.process(imageToProcess, status => {
+                    this.el.loadingText.textContent = status;
+                });
+            }
 
             // Parse
             const parsed = Parser.parse(text);
@@ -453,3 +524,12 @@ const App = {
 
 // Start app
 document.addEventListener('DOMContentLoaded', () => App.init());
+
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.log('SW registration failed:', err));
+    });
+}
