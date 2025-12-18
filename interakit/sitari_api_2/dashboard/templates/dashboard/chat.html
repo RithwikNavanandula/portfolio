@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with {{ customer.name }} | Sitari</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+        }
+
+        .app {
+            display: flex;
+            height: 100vh;
+        }
+
+        .contacts {
+            width: 280px;
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contacts-header {
+            padding: 1rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        .back-link {
+            color: #94a3b8;
+            text-decoration: none;
+        }
+
+        .contacts-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .contact {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid #334155;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .contact:hover {
+            background: #0f172a;
+        }
+
+        .contact.active {
+            background: #3b82f6;
+        }
+
+        .contact-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .contact-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .contact-phone {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 1rem 1.5rem;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .chat-avatar {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .message {
+            max-width: 65%;
+            margin-bottom: 1rem;
+        }
+
+        .message.sent {
+            margin-left: auto;
+        }
+
+        .message.received {
+            margin-right: auto;
+        }
+
+        .message-bubble {
+            padding: 0.75rem 1rem;
+            border-radius: 16px;
+            font-size: 0.9rem;
+        }
+
+        .message.sent .message-bubble {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received .message-bubble {
+            background: #1e293b;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-meta {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+            padding: 0 0.5rem;
+        }
+
+        .message.sent .message-meta {
+            text-align: right;
+        }
+
+        .message-media {
+            max-width: 200px;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+        }
+
+        .chat-input {
+            padding: 1rem 1.5rem;
+            background: #1e293b;
+            border-top: 1px solid #334155;
+        }
+
+        .input-form {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .input-text {
+            flex: 1;
+            padding: 0.875rem 1rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+
+        .input-text:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .send-btn {
+            padding: 0.875rem 1.5rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <aside class="contacts">
+            <div class="contacts-header">
+                <a href="{% url 'inbox' %}" class="back-link">← Back to Inbox</a>
+            </div>
+            <div class="contacts-list">
+                {% for c in customers %}
+                <a href="{% url 'chat' c.id %}" class="contact {% if c.id == customer.id %}active{% endif %}">
+                    <div class="contact-avatar">{{ c.name|first|upper }}</div>
+                    <div>
+                        <div class="contact-name">{{ c.name }}</div>
+                        <div class="contact-phone">{{ c.phone_number }}</div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </aside>
+
+        <main class="chat">
+            <div class="chat-header">
+                <div class="chat-avatar">{{ customer.name|first|upper }}</div>
+                <div>
+                    <div style="font-weight: 600;">{{ customer.name }}</div>
+                    <div style="font-size: 0.85rem; color: #94a3b8;">{{ customer.phone_number }}</div>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="messages">
+                {% for msg in messages %}
+                <div class="message {{ msg.direction }}">
+                    {% if msg.media %}
+                    <img src="{{ msg.media.url }}" class="message-media">
+                    {% endif %}
+                    {% if msg.content %}
+                    <div class="message-bubble">{{ msg.content }}</div>
+                    {% endif %}
+                    <div class="message-meta">
+                        {{ msg.timestamp|date:"M d, H:i" }}
+                        {% if msg.direction == 'sent' %}
+                        {% if msg.status == 'read' %}✓✓{% elif msg.status == 'delivered' %}✓✓{% else %}✓{% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty">
+                    <div style="font-size: 3rem;">💬</div>
+                    <p>No messages yet</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="chat-input">
+                <form method="post" class="input-form">
+                    {% csrf_token %}
+                    <input type="text" name="content" class="input-text" placeholder="Type a message..." required
+                        autocomplete="off">
+                    <button type="submit" class="send-btn">Send</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        setInterval(function () { location.reload(); }, 10000);
+    </script>
+</body>
+
+</html>
