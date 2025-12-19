@@ -76,33 +76,107 @@ def inbox_view(request):
 
 @login_required
 def chat_view(request, customer_id):
-    """Chat conversation"""
+    """Chat conversation with media support and error handling"""
     customer = get_object_or_404(Customer, id=customer_id)
     customers = Customer.objects.annotate(
         last_msg_time=Max('messages__timestamp')
     ).order_by('-last_msg_time')
     
+    error_message = None
+    
     if request.method == 'POST':
         content = request.POST.get('content', '').strip()
-        if content:
+        media_file = request.FILES.get('media')
+        
+        # Validate - need either content or media
+        if not content and not media_file:
+            error_message = "Please enter a message or attach a file"
+        else:
             from whatsapp.whatsapp_api import send_whatsapp_message
-            result = send_whatsapp_message(customer.phone_number, text=content)
+            import os
+            from django.conf import settings
             
-            Message.objects.create(
-                customer=customer,
-                content=content,
-                direction='sent',
-                status='sent',
-                whatsapp_message_id=result.get('messages', [{}])[0].get('id', '')
-            )
+            # Handle media upload
+            media_path = None
+            try:
+                if media_file:
+                    # Save media file temporarily
+                    media_dir = os.path.join(settings.MEDIA_ROOT, 'temp')
+                    os.makedirs(media_dir, exist_ok=True)
+                    media_path = os.path.join(media_dir, media_file.name)
+                    
+                    with open(media_path, 'wb+') as f:
+                        for chunk in media_file.chunks():
+                            f.write(chunk)
+                    
+                    # Determine media type
+                    ext = os.path.splitext(media_file.name)[1].lower()
+                    if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                        media_type = 'image'
+                    elif ext in ['.pdf', '.doc', '.docx', '.xls', '.xlsx']:
+                        media_type = 'document'
+                    elif ext in ['.mp4', '.mov', '.avi']:
+                        media_type = 'video'
+                    elif ext in ['.mp3', '.wav', '.ogg']:
+                        media_type = 'audio'
+                    else:
+                        media_type = 'document'
+                else:
+                    media_type = None
+                
+                # Send message
+                result = send_whatsapp_message(
+                    customer.phone_number, 
+                    text=content or None,
+                    media_path=media_path,
+                    media_type=media_type
+                )
+                
+                # Check if send was successful
+                if result.get('success'):
+                    # Create message record
+                    message = Message.objects.create(
+                        customer=customer,
+                        content=content or '',
+                        direction='sent',
+                        status='sent',
+                        whatsapp_message_id=result.get('messages', [{}])[0].get('id', '')
+                    )
+                    
+                    # Save uploaded media to message
+                    if media_file:
+                        message.media = media_file
+                        message.save()
+                else:
+                    # Send failed - save as failed message with error details
+                    error_message = result.get('error', 'Failed to send message')
+                    
+                    Message.objects.create(
+                        customer=customer,
+                        content=content or f'[Media: {media_file.name if media_file else ""}]',
+                        direction='sent',
+                        status='failed',
+                        error_detail=error_message,
+                    )
+            finally:
+                # Always clean up temp file
+                if media_path and os.path.exists(media_path):
+                    os.remove(media_path)
+        
+        if not error_message:
             return redirect('chat', customer_id=customer_id)
     
     messages = customer.messages.order_by('timestamp')
+    assignment = ChatAssignment.objects.filter(customer=customer, status__in=['pending', 'active']).first()
+    agents = Agent.objects.filter(is_available=True)
     
     context = {
         'customer': customer,
         'customers': customers,
         'messages': messages,
+        'assignment': assignment,
+        'agents': agents,
+        'error_message': error_message,
     }
     return render(request, 'dashboard/chat.html', context)
 
@@ -139,3 +213,85 @@ def privacy_view(request):
 def terms_view(request):
     """Terms of service page - public, no login required"""
     return render(request, 'dashboard/terms.html')
+
+
+@login_required
+def quick_replies_api(request):
+    """API to get quick reply templates"""
+    from agents.models import CannedResponse
+    
+    responses = CannedResponse.objects.all()
+    data = [
+        {
+            'id': r.id,
+            'title': r.title,
+            'shortcut': r.shortcut,
+            'content': r.content,
+            'category': r.category,
+        }
+        for r in responses
+    ]
+    return JsonResponse({'replies': data})
+
+
+@login_required
+def assign_chat(request, customer_id):
+    """Assign a chat to an agent"""
+    if request.method == 'POST':
+        customer = get_object_or_404(Customer, id=customer_id)
+        agent_id = request.POST.get('agent_id')
+        
+        if agent_id:
+            agent = get_object_or_404(Agent, id=agent_id)
+            
+            # Close existing assignment
+            ChatAssignment.objects.filter(
+                customer=customer, 
+                status__in=['pending', 'active']
+            ).update(status='resolved')
+            
+            # Create new assignment
+            ChatAssignment.objects.create(
+                customer=customer,
+                agent=agent,
+                status='active'
+            )
+        
+        return redirect('chat', customer_id=customer_id)
+    
+    return redirect('inbox')
+
+
+@login_required
+def search_messages(request):
+    """Search messages across all conversations"""
+    query = request.GET.get('q', '').strip()
+    
+    results = []
+    if query and len(query) >= 2:
+        from django.db.models import Q
+        messages_found = Message.objects.filter(
+            Q(content__icontains=query) |
+            Q(customer__name__icontains=query) |
+            Q(customer__phone_number__icontains=query)
+        ).select_related('customer').order_by('-timestamp')[:50]
+        
+        results = [
+            {
+                'id': m.id,
+                'content': m.content[:100],
+                'customer_id': m.customer_id,
+                'customer_name': m.customer.name,
+                'timestamp': m.timestamp.strftime('%b %d, %H:%M'),
+                'direction': m.direction,
+            }
+            for m in messages_found
+        ]
+    
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({'results': results, 'query': query})
+    
+    return render(request, 'dashboard/search.html', {
+        'results': results,
+        'query': query,
+    })

@@ -38,6 +38,7 @@ class Message(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     media = models.FileField(upload_to='messages/', blank=True, null=True)
     whatsapp_message_id = models.CharField(max_length=100, blank=True)
+    error_detail = models.TextField(blank=True, help_text="Error message if send failed")
     timestamp = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -49,9 +50,11 @@ class Message(models.Model):
 
 class WhatsAppConfig(models.Model):
     """WhatsApp API configuration"""
-    phone_number_id = models.CharField(max_length=50, default='534aborrar29870')
+    phone_number_id = models.CharField(max_length=50)
     access_token = models.TextField(blank=True)
+    app_secret = models.CharField(max_length=100, blank=True, help_text="App Secret for webhook signature validation")
     webhook_verify_token = models.CharField(max_length=50, default='sitari_verify_123')
     
     def __str__(self):
         return f"WhatsApp Config ({self.phone_number_id})"
+

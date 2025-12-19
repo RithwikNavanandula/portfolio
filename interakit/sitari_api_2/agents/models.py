@@ -45,3 +45,20 @@ class AdminNotification(models.Model):
     
     def __str__(self):
         return f"{self.customer.name}: {self.message[:30]}"
+
+
+class CannedResponse(models.Model):
+    """Pre-saved quick reply templates"""
+    title = models.CharField(max_length=100, help_text="Short name for the response")
+    shortcut = models.CharField(max_length=20, unique=True, help_text="Type /shortcut to insert")
+    content = models.TextField(help_text="The message content")
+    category = models.CharField(max_length=50, blank=True, help_text="Optional category")
+    use_count = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-use_count', 'title']
+    
+    def __str__(self):
+        return f"/{self.shortcut}: {self.title}"
+

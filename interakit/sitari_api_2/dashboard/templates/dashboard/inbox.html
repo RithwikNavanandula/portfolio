@@ -25,6 +25,7 @@
             min-height: 100vh;
         }
 
+        /* Sidebar */
         .sidebar {
             width: 200px;
             background: #1e293b;
@@ -67,6 +68,7 @@
             font-size: 0.85rem;
         }
 
+        /* Main Content */
         .main {
             flex: 1;
             padding: 1.5rem;
@@ -77,6 +79,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .title {
@@ -84,10 +88,41 @@
             font-weight: 700;
         }
 
+        /* Search */
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .search-input {
+            padding: 0.75rem 1rem;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #fff;
+            width: 250px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .search-btn {
+            padding: 0.75rem 1rem;
+            background: #3b82f6;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Stats */
         .stats {
             display: flex;
             gap: 1rem;
             margin-bottom: 1.5rem;
+            flex-wrap: wrap;
         }
 
         .stat {
@@ -107,6 +142,7 @@
             color: #64748b;
         }
 
+        /* Chat List */
         .card {
             background: #1e293b;
             border: 1px solid #334155;
@@ -146,10 +182,12 @@
             align-items: center;
             justify-content: center;
             font-weight: 600;
+            flex-shrink: 0;
         }
 
         .chat-info {
             flex: 1;
+            min-width: 0;
         }
 
         .chat-name {
@@ -165,10 +203,14 @@
             font-size: 0.8rem;
             color: #64748b;
             margin-top: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .chat-meta {
             text-align: right;
+            flex-shrink: 0;
         }
 
         .chat-time {
@@ -197,6 +239,37 @@
             padding: 3rem;
             color: #64748b;
         }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+                padding: 0.5rem;
+            }
+
+            .sidebar .logo {
+                font-size: 1rem;
+            }
+
+            .nav-link {
+                font-size: 0.75rem;
+                padding: 0.5rem;
+                text-align: center;
+            }
+
+            .main {
+                padding: 1rem;
+            }
+
+            .search-input {
+                width: 150px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
 
@@ -205,6 +278,7 @@
         <aside class="sidebar">
             <div class="logo">💬 Sitari</div>
             <a href="{% url 'inbox' %}" class="nav-link active">📥 Inbox</a>
+            <a href="{% url 'search' %}" class="nav-link">🔍 Search</a>
             <a href="/admin/" class="nav-link">⚙️ Admin</a>
             <a href="{% url 'logout' %}" class="logout">Logout</a>
         </aside>
@@ -212,10 +286,10 @@
         <main class="main">
             <div class="header">
                 <h1 class="title">Inbox</h1>
-                {% if notification_count %}
-                <span style="background: #ef4444; padding: 0.5rem 1rem; border-radius: 8px;">🔔 {{ notification_count
-                    }}</span>
-                {% endif %}
+                <form action="{% url 'search' %}" method="get" class="search-box">
+                    <input type="text" name="q" class="search-input" placeholder="Search messages...">
+                    <button type="submit" class="search-btn">🔍</button>
+                </form>
             </div>
 
             <div class="stats">
@@ -227,6 +301,12 @@
                     <div class="stat-value" style="color: #f59e0b;">{{ unassigned_count }}</div>
                     <div class="stat-label">Unassigned</div>
                 </div>
+                {% if notification_count %}
+                <div class="stat" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                    <div class="stat-value">{{ notification_count }}</div>
+                    <div class="stat-label">Notifications</div>
+                </div>
+                {% endif %}
             </div>
 
             <div class="card">
@@ -238,7 +318,10 @@
                         <div class="chat-name">{{ item.customer.name }}</div>
                         <div class="chat-phone">{{ item.customer.phone_number }}</div>
                         {% if item.last_message %}
-                        <div class="chat-preview">{{ item.last_message.content|truncatechars:40 }}</div>
+                        <div class="chat-preview">
+                            {% if item.last_message.direction == 'sent' %}↗️{% else %}↙️{% endif %}
+                            {{ item.last_message.content|truncatechars:40 }}
+                        </div>
                         {% endif %}
                     </div>
                     <div class="chat-meta">

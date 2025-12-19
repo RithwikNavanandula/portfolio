@@ -24,6 +24,7 @@
             height: 100vh;
         }
 
+        /* Contacts Sidebar */
         .contacts {
             width: 280px;
             background: #1e293b;
@@ -87,6 +88,7 @@
             color: #94a3b8;
         }
 
+        /* Chat Area */
         .chat {
             flex: 1;
             display: flex;
@@ -113,6 +115,7 @@
             font-weight: 600;
         }
 
+        /* Messages */
         .chat-messages {
             flex: 1;
             padding: 1.5rem;
@@ -136,6 +139,7 @@
             padding: 0.75rem 1rem;
             border-radius: 16px;
             font-size: 0.9rem;
+            word-wrap: break-word;
         }
 
         .message.sent .message-bubble {
@@ -163,17 +167,53 @@
             max-width: 200px;
             border-radius: 12px;
             margin-bottom: 0.5rem;
+            cursor: pointer;
         }
 
+        /* Status Icons */
+        .status-sent {
+            color: #64748b;
+        }
+
+        .status-delivered {
+            color: #94a3b8;
+        }
+
+        .status-read {
+            color: #22c55e;
+        }
+
+        /* Input Area */
         .chat-input {
             padding: 1rem 1.5rem;
             background: #1e293b;
             border-top: 1px solid #334155;
         }
 
-        .input-form {
+        .input-row {
             display: flex;
-            gap: 0.75rem;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .action-btn {
+            padding: 0.75rem;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1.25rem;
+        }
+
+        .action-btn:hover {
+            background: #334155;
+            color: #fff;
         }
 
         .input-text {
@@ -201,10 +241,93 @@
             cursor: pointer;
         }
 
+        .send-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Quick Replies Dropdown */
+        .quick-replies {
+            position: relative;
+        }
+
+        .quick-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            display: none;
+            z-index: 100;
+        }
+
+        .quick-dropdown.show {
+            display: block;
+        }
+
+        .quick-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #334155;
+        }
+
+        .quick-item:hover {
+            background: #334155;
+        }
+
+        .quick-item:last-child {
+            border-bottom: none;
+        }
+
+        .quick-title {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .quick-shortcut {
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+
+        .quick-preview {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+
         .empty {
             text-align: center;
             padding: 3rem;
             color: #64748b;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .contacts {
+                width: 70px;
+            }
+
+            .contact-name,
+            .contact-phone {
+                display: none;
+            }
+
+            .contacts-header {
+                font-size: 0.75rem;
+                text-align: center;
+            }
+
+            .back-link {
+                font-size: 0.7rem;
+            }
+
+            .message {
+                max-width: 85%;
+            }
         }
     </style>
 </head>
@@ -213,7 +336,7 @@
     <div class="app">
         <aside class="contacts">
             <div class="contacts-header">
-                <a href="{% url 'inbox' %}" class="back-link">← Back to Inbox</a>
+                <a href="{% url 'inbox' %}" class="back-link">← Back</a>
             </div>
             <div class="contacts-list">
                 {% for c in customers %}
@@ -231,17 +354,40 @@
         <main class="chat">
             <div class="chat-header">
                 <div class="chat-avatar">{{ customer.name|first|upper }}</div>
-                <div>
+                <div style="flex: 1;">
                     <div style="font-weight: 600;">{{ customer.name }}</div>
                     <div style="font-size: 0.85rem; color: #94a3b8;">{{ customer.phone_number }}</div>
                 </div>
+
+                <!-- Agent Assignment -->
+                <form action="{% url 'assign-chat' customer.id %}" method="post"
+                    style="display: flex; gap: 0.5rem; align-items: center;">
+                    {% csrf_token %}
+                    <select name="agent_id"
+                        style="padding: 0.5rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #fff;">
+                        <option value="">Assign to...</option>
+                        {% for agent in agents %}
+                        <option value="{{ agent.id }}">{{ agent.display_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit"
+                        style="padding: 0.5rem 1rem; background: #22c55e; border: none; border-radius: 8px; color: white; cursor: pointer;">
+                        Assign
+                    </button>
+                </form>
+
+                {% if assignment %}
+                <span style="padding: 0.25rem 0.75rem; background: #22c55e; border-radius: 999px; font-size: 0.75rem;">
+                    {{ assignment.agent.display_name }}
+                </span>
+                {% endif %}
             </div>
 
             <div class="chat-messages" id="messages">
                 {% for msg in messages %}
                 <div class="message {{ msg.direction }}">
                     {% if msg.media %}
-                    <img src="{{ msg.media.url }}" class="message-media">
+                    <img src="{{ msg.media.url }}" class="message-media" onclick="window.open('{{ msg.media.url }}')">
                     {% endif %}
                     {% if msg.content %}
                     <div class="message-bubble">{{ msg.content }}</div>
@@ -249,7 +395,15 @@
                     <div class="message-meta">
                         {{ msg.timestamp|date:"M d, H:i" }}
                         {% if msg.direction == 'sent' %}
-                        {% if msg.status == 'read' %}✓✓{% elif msg.status == 'delivered' %}✓✓{% else %}✓{% endif %}
+                        {% if msg.status == 'read' %}
+                        <span class="status-read">✓✓</span>
+                        {% elif msg.status == 'delivered' %}
+                        <span class="status-delivered">✓✓</span>
+                        {% elif msg.status == 'failed' %}
+                        <span style="color: #ef4444;">✗ Failed</span>
+                        {% else %}
+                        <span class="status-sent">✓</span>
+                        {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -262,19 +416,124 @@
             </div>
 
             <div class="chat-input">
-                <form method="post" class="input-form">
+                {% if error_message %}
+                <div
+                    style="background: #dc2626; color: white; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                    ⚠️ {{ error_message }}
+                </div>
+                {% endif %}
+                <form method="post" class="input-row" enctype="multipart/form-data" id="chatForm">
                     {% csrf_token %}
-                    <input type="text" name="content" class="input-text" placeholder="Type a message..." required
-                        autocomplete="off">
+                    <div class="input-actions">
+                        <div class="quick-replies">
+                            <button type="button" class="action-btn" id="quickBtn" title="Quick Replies">⚡</button>
+                            <div class="quick-dropdown" id="quickDropdown"></div>
+                        </div>
+                        <label class="action-btn" title="Attach File">
+                            📎
+                            <input type="file" name="media" style="display: none;" id="fileInput" accept="image/*,.pdf">
+                        </label>
+                    </div>
+                    <input type="text" name="content" class="input-text" placeholder="Type a message or /shortcut"
+                        id="messageInput" autocomplete="off">
                     <button type="submit" class="send-btn">Send</button>
                 </form>
+                <div id="filePreview" style="padding: 0.5rem 0; color: #94a3b8; font-size: 0.8rem;"></div>
             </div>
         </main>
     </div>
 
     <script>
-        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-        setInterval(function () { location.reload(); }, 10000);
+        // Scroll to bottom
+        const msgContainer = document.getElementById('messages');
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+
+        // Quick Replies
+        let quickReplies = [];
+        const quickBtn = document.getElementById('quickBtn');
+        const quickDropdown = document.getElementById('quickDropdown');
+        const messageInput = document.getElementById('messageInput');
+
+        // Load quick replies
+        fetch('/api/quick-replies/')
+            .then(r => r.json())
+            .then(data => {
+                quickReplies = data.replies || [];
+                renderQuickReplies();
+            });
+
+        function renderQuickReplies(filter = '') {
+            const filtered = quickReplies.filter(r =>
+                !filter || r.shortcut.includes(filter) || r.title.toLowerCase().includes(filter.toLowerCase())
+            );
+            quickDropdown.innerHTML = filtered.map(r => `
+                <div class="quick-item" data-content="${r.content.replace(/"/g, '&quot;')}">
+                    <div class="quick-title">${r.title}</div>
+                    <div class="quick-shortcut">/${r.shortcut}</div>
+                    <div class="quick-preview">${r.content.substring(0, 50)}...</div>
+                </div>
+            `).join('') || '<div class="quick-item" style="color: #64748b;">No quick replies found</div>';
+
+            // Add click handlers
+            quickDropdown.querySelectorAll('.quick-item[data-content]').forEach(item => {
+                item.onclick = () => {
+                    messageInput.value = item.dataset.content;
+                    quickDropdown.classList.remove('show');
+                    messageInput.focus();
+                };
+            });
+        }
+
+        // Toggle dropdown
+        quickBtn.onclick = () => quickDropdown.classList.toggle('show');
+
+        // Close on outside click
+        document.addEventListener('click', e => {
+            if (!quickBtn.contains(e.target) && !quickDropdown.contains(e.target)) {
+                quickDropdown.classList.remove('show');
+            }
+        });
+
+        // Shortcut detection (type /shortcut)
+        messageInput.addEventListener('input', e => {
+            const val = e.target.value;
+            if (val.startsWith('/')) {
+                const shortcut = val.slice(1);
+                const match = quickReplies.find(r => r.shortcut === shortcut);
+                if (match) {
+                    messageInput.value = match.content;
+                } else {
+                    renderQuickReplies(shortcut);
+                    quickDropdown.classList.add('show');
+                }
+            }
+        });
+
+        // File preview
+        document.getElementById('fileInput').addEventListener('change', e => {
+            const file = e.target.files[0];
+            document.getElementById('filePreview').textContent = file ? `📎 ${file.name}` : '';
+        });
+
+        // Smart refresh - pause when typing or uploading
+        let isSubmitting = false;
+
+        document.getElementById('chatForm').addEventListener('submit', function () {
+            isSubmitting = true;
+            // Show loading indicator
+            document.querySelector('.send-btn').textContent = 'Sending...';
+            document.querySelector('.send-btn').disabled = true;
+        });
+
+        // Only refresh if not typing or submitting
+        setInterval(() => {
+            const isTyping = messageInput.value.length > 0;
+            const hasFile = document.getElementById('fileInput').files.length > 0;
+
+            if (!isSubmitting && !isTyping && !hasFile) {
+                location.reload();
+            }
+        }, 10000);  // Increased to 10 seconds
     </script>
 </body>
 
