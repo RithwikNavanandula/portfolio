@@ -80,7 +80,7 @@ AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
-USE_I18N = True
+USE_I18N = False  # Disabled to save RAM (not using translations)
 USE_TZ = True
 
 STATIC_URL = 'static/'
@@ -92,9 +92,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
 
-# File upload limits (5MB max)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
+# File upload limits (2MB max - reduced for low-RAM server)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2097152
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2097152
 
 # Logging configuration
 LOGGING = {
@@ -114,17 +114,17 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': 'WARNING' if not DEBUG else 'INFO',  # Less logging in production
     },
     'loggers': {
         'whatsapp': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'INFO' if not DEBUG else 'DEBUG',  # Less verbose in production
             'propagate': False,
         },
         'chatbot': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'INFO' if not DEBUG else 'DEBUG',
             'propagate': False,
         },
     },
