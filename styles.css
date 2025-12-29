@@ -22,6 +22,8 @@ html {
 body {
     font-family: 'Inter', -apple-system, sans-serif;
     background: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    background-blend-mode: overlay;
     color: var(--text);
     line-height: 1.6;
 }
@@ -118,17 +120,53 @@ body {
     -webkit-text-fill-color: var(--accent);
 }
 
+.hero-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 48px;
+}
+
+.hero-text {
+    flex: 1;
+}
+
 .hero-desc {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     color: var(--text-muted);
-    max-width: 600px;
-    margin-bottom: 48px;
+    max-width: 550px;
+    margin-bottom: 16px;
+    line-height: 1.7;
+}
+
+.hero-hobby {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 32px;
+}
+
+.hero-photo {
+    flex-shrink: 0;
+}
+
+.photo-placeholder {
+    width: 140px;
+    height: 140px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
 }
 
 .hero-stats {
     display: flex;
     gap: 48px;
-    margin-bottom: 48px;
 }
 
 .stat {
@@ -214,6 +252,19 @@ body {
     transform: translateX(8px);
 }
 
+.project.featured {
+    padding: 40px;
+    border-left: 4px solid var(--accent);
+}
+
+.project.featured .project-name {
+    font-size: 1.75rem;
+}
+
+.project.featured .project-desc {
+    font-size: 1.05rem;
+}
+
 .project-number {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.85rem;
@@ -276,10 +327,6 @@ body {
 
 .project-link:hover {
     text-decoration: underline;
-}
-
-.demo-link {
-    /* Same as project-link, just positioned right via flex */
 }
 
 .about-grid {
@@ -420,6 +467,21 @@ body {
 }
 
 @media (max-width: 768px) {
+    .hero-content {
+        flex-direction: column;
+    }
+
+    .hero-photo {
+        order: -1;
+        align-self: center;
+    }
+
+    .photo-placeholder {
+        width: 100px;
+        height: 100px;
+        font-size: 2rem;
+    }
+
     .hero-stats {
         flex-wrap: wrap;
         gap: 24px;
@@ -440,5 +502,11 @@ body {
     .contact-item {
         flex-direction: column;
         gap: 4px;
+    }
+
+    .project-links {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
     }
 }
