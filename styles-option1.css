@@ -1,4 +1,4 @@
-/* ===== NEW MINIMAL DESIGN ===== */
+/* ===== OPTION 1: MINIMAL LIGHT ===== */
 :root {
     --bg: #fafafa;
     --bg-alt: #ffffff;
@@ -21,9 +21,10 @@ html {
 
 body {
     font-family: 'Inter', -apple-system, sans-serif;
-    background: var(--bg);
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50px, #fafafa 50px, #fafafa 100%);
     color: var(--text);
     line-height: 1.6;
+    min-height: 100vh;
 }
 
 .container {
@@ -32,7 +33,6 @@ body {
     padding: 0 24px;
 }
 
-/* Header */
 .header {
     display: flex;
     justify-content: space-between;
@@ -48,7 +48,6 @@ body {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--text);
     text-decoration: none;
     width: 48px;
     height: 48px;
@@ -68,7 +67,8 @@ body {
 .nav a {
     color: var(--text-muted);
     text-decoration: none;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
+    font-weight: 500;
     transition: color 0.2s;
 }
 
@@ -76,7 +76,6 @@ body {
     color: var(--text);
 }
 
-/* Hero */
 .hero {
     padding: 80px 0 120px;
 }
@@ -98,10 +97,9 @@ body {
 }
 
 .highlight {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea, #764ba2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-clip: text;
 }
 
 .hero-desc {
@@ -167,7 +165,6 @@ body {
     border-color: var(--text);
 }
 
-/* Sections */
 .section {
     padding: 80px 0;
     border-top: 1px solid var(--border);
@@ -180,7 +177,6 @@ body {
     margin-bottom: 48px;
 }
 
-/* Projects */
 .project-list {
     display: flex;
     flex-direction: column;
@@ -206,6 +202,17 @@ body {
     color: var(--text-muted);
     margin-bottom: 12px;
     display: block;
+}
+
+.project-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 16px;
 }
 
 .project-name {
@@ -247,7 +254,6 @@ body {
     text-decoration: underline;
 }
 
-/* About */
 .about-grid {
     display: grid;
     gap: 48px;
@@ -320,7 +326,6 @@ body {
     color: var(--text-muted);
 }
 
-/* Contact */
 .contact-intro {
     font-size: 1.2rem;
     color: var(--text-muted);
@@ -359,7 +364,6 @@ body {
     font-weight: 500;
 }
 
-/* Footer */
 .footer {
     padding: 48px 0;
     text-align: center;
@@ -368,7 +372,6 @@ body {
     border-top: 1px solid var(--border);
 }
 
-/* Animations */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -386,7 +389,6 @@ body {
     animation: fadeIn 0.6s ease;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .hero-stats {
         flex-wrap: wrap;

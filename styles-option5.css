@@ -1,11 +1,11 @@
-/* ===== NEW MINIMAL DESIGN ===== */
+/* ===== OPTION 5: DARK PURPLE ===== */
 :root {
-    --bg: #fafafa;
-    --bg-alt: #ffffff;
-    --text: #111111;
-    --text-muted: #666666;
-    --accent: #000000;
-    --border: #e5e5e5;
+    --bg: #1a1625;
+    --bg-alt: #231f30;
+    --text: #f5f5f5;
+    --text-muted: #a0a0b0;
+    --accent: #9f7aea;
+    --border: #3d3650;
     --radius: 8px;
 }
 
@@ -32,7 +32,6 @@ body {
     padding: 0 24px;
 }
 
-/* Header */
 .header {
     display: flex;
     justify-content: space-between;
@@ -48,14 +47,13 @@ body {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--text);
     text-decoration: none;
     width: 48px;
     height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--text);
+    background: var(--accent);
     color: var(--bg);
     border-radius: 50%;
 }
@@ -73,16 +71,15 @@ body {
 }
 
 .nav a:hover {
-    color: var(--text);
+    color: var(--accent);
 }
 
-/* Hero */
 .hero {
     padding: 80px 0 120px;
 }
 
 .hero-tag {
-    color: var(--text-muted);
+    color: var(--accent);
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -98,10 +95,8 @@ body {
 }
 
 .highlight {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--accent);
+    -webkit-text-fill-color: var(--accent);
 }
 
 .hero-desc {
@@ -126,6 +121,7 @@ body {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 1.5rem;
     font-weight: 700;
+    color: var(--accent);
 }
 
 .stat-label {
@@ -148,13 +144,13 @@ body {
 }
 
 .btn-primary {
-    background: var(--text);
+    background: var(--accent);
     color: var(--bg);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 24px rgba(159, 122, 234, 0.4);
 }
 
 .btn-secondary {
@@ -164,10 +160,10 @@ body {
 }
 
 .btn-secondary:hover {
-    border-color: var(--text);
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
-/* Sections */
 .section {
     padding: 80px 0;
     border-top: 1px solid var(--border);
@@ -180,7 +176,6 @@ body {
     margin-bottom: 48px;
 }
 
-/* Projects */
 .project-list {
     display: flex;
     flex-direction: column;
@@ -196,14 +191,15 @@ body {
 }
 
 .project:hover {
-    border-color: var(--text);
+    border-color: var(--accent);
     transform: translateX(8px);
+    box-shadow: 0 0 30px rgba(159, 122, 234, 0.15);
 }
 
 .project-number {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.85rem;
-    color: var(--text-muted);
+    color: var(--accent);
     margin-bottom: 12px;
     display: block;
 }
@@ -232,13 +228,14 @@ body {
     font-size: 0.8rem;
     padding: 6px 12px;
     background: var(--bg);
+    border: 1px solid var(--border);
     border-radius: 20px;
     color: var(--text-muted);
 }
 
 .project-link {
     font-size: 0.9rem;
-    color: var(--text);
+    color: var(--accent);
     text-decoration: none;
     font-weight: 500;
 }
@@ -247,7 +244,6 @@ body {
     text-decoration: underline;
 }
 
-/* About */
 .about-grid {
     display: grid;
     gap: 48px;
@@ -270,6 +266,7 @@ body {
     font-size: 1.2rem;
     font-weight: 600;
     margin-bottom: 24px;
+    color: var(--accent);
 }
 
 .skills-grid {
@@ -306,7 +303,7 @@ body {
 .exp-date {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.85rem;
-    color: var(--text-muted);
+    color: var(--accent);
     min-width: 80px;
 }
 
@@ -320,7 +317,6 @@ body {
     color: var(--text-muted);
 }
 
-/* Contact */
 .contact-intro {
     font-size: 1.2rem;
     color: var(--text-muted);
@@ -346,7 +342,7 @@ body {
 }
 
 .contact-item:hover {
-    border-color: var(--text);
+    border-color: var(--accent);
     transform: translateX(8px);
 }
 
@@ -359,7 +355,6 @@ body {
     font-weight: 500;
 }
 
-/* Footer */
 .footer {
     padding: 48px 0;
     text-align: center;
@@ -368,7 +363,6 @@ body {
     border-top: 1px solid var(--border);
 }
 
-/* Animations */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -386,7 +380,6 @@ body {
     animation: fadeIn 0.6s ease;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .hero-stats {
         flex-wrap: wrap;
